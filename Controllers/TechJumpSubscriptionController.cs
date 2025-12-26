@@ -3,7 +3,9 @@ using EmpireOneRestAPIITJ.DataManager;
 using EmpireOneRestAPIITJ.Models;
 using EmpireOneRestAPIITJ.Services;
 using Stripe;
+using Stripe.Checkout;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Configuration;
 using System.Data;
@@ -26,7 +28,7 @@ namespace EmpireOneRestAPIITJ.Controllers
             "https://www.techinterviewjump.com",
         headers: "*",
         methods: "*")]
-    [RoutePrefix("api/ITechjumpsubscription")]
+    [RoutePrefix("api/ITechJump")]
     public class ITechJumpSubscriptionController : ApiController
     {
         private readonly DataAccess02 _data = new DataAccess02();
@@ -81,12 +83,12 @@ namespace EmpireOneRestAPIITJ.Controllers
                     cmd.CommandType = CommandType.StoredProcedure;
 
                     cmd.Parameters.Add("@UserId", SqlDbType.Int).Value = req.UserId;
-                    cmd.Parameters.Add("@UserAlias", SqlDbType.VarChar, 8).Value = req.UserAlias.ToUpper();
-                    cmd.Parameters.Add("@PlanCode", SqlDbType.VarChar, 50).Value = req.PlanCode.ToUpper();
-                    cmd.Parameters.Add("@StripePaymentIntentId", SqlDbType.VarChar, 50).Value = req.StripePaymentIntentId;
-                    cmd.Parameters.Add("@StripeChargeId", SqlDbType.VarChar, 50).Value = req.StripeChargeId;
-                    cmd.Parameters.Add("@StripeCustomerId", SqlDbType.VarChar, 50).Value = req.StripeCustomerId;
-                    cmd.Parameters.Add("@StripePaymentMethodId", SqlDbType.VarChar, 50).Value = req.StripePaymentMethodId;
+                    cmd.Parameters.Add("@UserAlias", SqlDbType.VarChar,8).Value = req.UserAlias.ToUpper();
+                    cmd.Parameters.Add("@PlanCode", SqlDbType.VarChar,50).Value = req.PlanCode.ToUpper();
+                    cmd.Parameters.Add("@StripePaymentIntentId", SqlDbType.VarChar,50).Value = (object)req.StripePaymentIntentId ?? DBNull.Value;
+                    cmd.Parameters.Add("@StripeChargeId", SqlDbType.VarChar,50).Value = (object)req.StripeChargeId ?? DBNull.Value;
+                    cmd.Parameters.Add("@StripeCustomerId", SqlDbType.VarChar,50).Value = (object)req.StripeCustomerId ?? DBNull.Value;
+                    cmd.Parameters.Add("@StripePaymentMethodId", SqlDbType.VarChar,50).Value = (object)req.StripePaymentMethodId ?? DBNull.Value;
 
                     await conn.OpenAsync();
                     using (var reader = await cmd.ExecuteReaderAsync(CommandBehavior.SingleResult))
@@ -116,8 +118,6 @@ namespace EmpireOneRestAPIITJ.Controllers
             }
         }
 
-    
-
         // GET /api/ITechjumpsubscription/{userid}
         [HttpGet, Route("userid/{userid:int}")]
         public async Task<IHttpActionResult> GetById(int userid)
@@ -125,7 +125,7 @@ namespace EmpireOneRestAPIITJ.Controllers
             if (string.IsNullOrWhiteSpace(_connString))
                 return BadRequest("Connection string 'ITechJumpDB' not found.");
 
-            if (userid == 0)
+            if (userid ==0)
                 return BadRequest("UserID is required.");
 
             try
@@ -134,7 +134,7 @@ namespace EmpireOneRestAPIITJ.Controllers
                 using (var cmd = new SqlCommand("dbo.Get_Subscription_ByUserID_FullInfo", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.Add("@userid", SqlDbType.Int, 50).Value = userid;
+                    cmd.Parameters.Add("@userid", SqlDbType.Int,50).Value = userid;
 
                     await conn.OpenAsync();
 
@@ -162,7 +162,7 @@ namespace EmpireOneRestAPIITJ.Controllers
                                 PlanCode = reader.IsDBNull(oPlanCode) ? null : reader.GetString(oPlanCode),
                                 PlanName = reader.IsDBNull(oPlanName) ? null : reader.GetString(oPlanName),
                                 Description = reader.IsDBNull(oDescription) ? null : reader.GetString(oDescription),
-                                Price = reader.IsDBNull(oPrice) ? 0m : reader.GetDecimal(oPrice),
+                                Price = reader.IsDBNull(oPrice) ?0m : reader.GetDecimal(oPrice),
                                 PlanStartDate = reader.IsDBNull(oPlanStartDate) ? (DateTime?)null : reader.GetDateTime(oPlanStartDate),
                                 PlanEndDate = reader.IsDBNull(oPlanEndDate) ? (DateTime?)null : reader.GetDateTime(oPlanEndDate),
                                 BillingPeriod = reader.IsDBNull(oBillingPeriod) ? null : reader.GetString(oBillingPeriod),
@@ -185,11 +185,6 @@ namespace EmpireOneRestAPIITJ.Controllers
             }
         }
 
-        ///// <summary>Get ITechCards.</summary>
-        //[HttpGet, Route("ITechcards/byname")]
-        //public IHttpActionResult Get_ITechCards_ByName([FromUri][Required] string userid, string name)
-        //    => Ok(_data.Get_ITechCards(userid, name));
-
         /// <summary>Get UserSubscriptions (single definitive endpoint).</summary>
         [HttpGet, Route("subscription/usersubscriptions")]
         public IHttpActionResult Get_UserSubscriptionsController(int userid, string plancode)
@@ -205,71 +200,6 @@ namespace EmpireOneRestAPIITJ.Controllers
                 return InternalServerError(ex);
             }
         }
-
-        // GET /api/ITechjumpsubscription/{userid}
-        //[HttpGet, Route("{plancode:maxlength(50)}")]
-        //public async Task<IHttpActionResult> Get_PlanDetail_ByUserID(int userid)
-        //{
-        //    if (string.IsNullOrWhiteSpace(_connString))
-        //        return BadRequest("Connection string 'ITechJumpDB' not found.");
-
-        //    if (userid == 0)
-        //        return BadRequest("UserID is required.");
-
-        //    try
-        //    {
-        //        using (var conn = new SqlConnection(_connString))
-        //        using (var cmd = new SqlCommand("dbo.Get_Subscription_ByUserID_FullInfo", conn))
-        //        {
-        //            cmd.CommandType = CommandType.StoredProcedure;
-        //            cmd.Parameters.Add("@userid", SqlDbType.Int, 50).Value = userid;
-
-        //            await conn.OpenAsync();
-
-        //            using (var reader = await cmd.ExecuteReaderAsync(CommandBehavior.SingleRow))
-        //            {
-        //                if (!reader.HasRows)
-        //                    return NotFound();
-
-        //                ModelSubscriptionPlans found = null;
-
-        //                if (await reader.ReadAsync())
-        //                {
-        //                    int oPlanCode = reader.GetOrdinal("PlanCode");
-        //                    int oPlanName = reader.GetOrdinal("PlanName");
-        //                    int oDescription = reader.GetOrdinal("Description");
-        //                    int oPrice = reader.GetOrdinal("Price");
-        //                    int oPlanStartDate = reader.GetOrdinal("CurrentPeriodStartUtc");
-        //                    int oPlanEndDate = reader.GetOrdinal("CurrentPeriodEndUtc");
-        //                    int oBillingPeriod = reader.GetOrdinal("BillingPeriod");
-        //                    int oIsActive = reader.GetOrdinal("IsActive");
-
-        //                    found = new ModelSubscriptionPlans
-        //                    {
-        //                        PlanCode = reader.IsDBNull(oPlanCode) ? null : reader.GetString(oPlanCode),
-        //                        PlanName = reader.IsDBNull(oPlanName) ? null : reader.GetString(oPlanName),
-        //                        Description = reader.IsDBNull(oDescription) ? null : reader.GetString(oDescription),
-        //                        Price = reader.IsDBNull(oPrice) ? 0m : reader.GetDecimal(oPrice),
-        //                        PlanStartDate = reader.IsDBNull(oPlanStartDate) ? (DateTime?)null : reader.GetDateTime(oPlanStartDate),
-        //                        PlanEndDate = reader.IsDBNull(oPlanEndDate) ? (DateTime?)null : reader.GetDateTime(oPlanEndDate),
-        //                        BillingPeriod = reader.IsDBNull(oBillingPeriod) ? null : reader.GetString(oBillingPeriod),
-        //                        IsActive = !reader.IsDBNull(oIsActive) && reader.GetBoolean(oIsActive)
-        //                    };
-        //                }
-
-        //                return Ok(new { ok = true, subscription = found });
-        //            }
-        //        }
-        //    }
-        //    catch (SqlException ex)
-        //    {
-        //        return InternalServerError(new Exception($"SQL error {ex.Number}: {ex.Message}"));
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return InternalServerError(ex);
-        //    }
-        //}
 
         // GET /api/ITechjumpsubscription/{plancode}
         [HttpGet, Route("{plancode:maxlength(50)}")]
@@ -287,7 +217,7 @@ namespace EmpireOneRestAPIITJ.Controllers
                 using (var cmd = new SqlCommand("dbo.Get_Subscription_byPlanCode", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.Add("@PlanCode", SqlDbType.VarChar, 50).Value = plancode.Trim();
+                    cmd.Parameters.Add("@PlanCode", SqlDbType.VarChar,50).Value = plancode.Trim();
 
                     await conn.OpenAsync();
 
@@ -304,7 +234,6 @@ namespace EmpireOneRestAPIITJ.Controllers
                             int oPlanName = reader.GetOrdinal("PlanName");
                             int oDescription = reader.GetOrdinal("Description");
                             int oPrice = reader.GetOrdinal("Price");
-                         
                             int oIsActive = reader.GetOrdinal("IsActive");
 
                             found = new ModelSubscriptionPlans
@@ -312,8 +241,7 @@ namespace EmpireOneRestAPIITJ.Controllers
                                 PlanCode = reader.IsDBNull(oPlanCode) ? null : reader.GetString(oPlanCode),
                                 PlanName = reader.IsDBNull(oPlanName) ? null : reader.GetString(oPlanName),
                                 Description = reader.IsDBNull(oDescription) ? null : reader.GetString(oDescription),
-                                Price = reader.IsDBNull(oPrice) ? 0m : reader.GetDecimal(oPrice),
-                               
+                                Price = reader.IsDBNull(oPrice) ?0m : reader.GetDecimal(oPrice),
                                 IsActive = !reader.IsDBNull(oIsActive) && reader.GetBoolean(oIsActive)
                             };
                         }
@@ -369,35 +297,78 @@ namespace EmpireOneRestAPIITJ.Controllers
             };
         }
 
-        [HttpPost, Route("CallStripePayment")]
-        public async Task<IHttpActionResult> CallStripePayment(CreateSubscriptionRequest req)
+        // Create a Stripe Checkout Session for hosted payment page
+        [HttpPost, Route("stripe/create-checkout-session")]
+        public IHttpActionResult CreateCheckoutSession([FromBody] CreateCheckoutSessionRequest req)
         {
+            if (req == null)
+                return BadRequest("Request body is required.");
+
+            if (string.IsNullOrWhiteSpace(req.PlanCode))
+                return BadRequest("PlanCode (Stripe Price ID) is required.");
+
+            if (string.IsNullOrWhiteSpace(req.UserEmail))
+                return BadRequest("UserEmail is required.");
+
             var secretKey = ConfigurationManager.AppSettings["StripeSecretKey"];
+            if (string.IsNullOrWhiteSpace(secretKey))
+                return InternalServerError(new Exception("StripeSecretKey appSetting is missing."));
+
+            var successUrl = ConfigurationManager.AppSettings["StripeCheckoutSuccessUrl"];
+            var cancelUrl  = ConfigurationManager.AppSettings["StripeCheckoutCancelUrl"];
+
+            if (string.IsNullOrWhiteSpace(successUrl) || string.IsNullOrWhiteSpace(cancelUrl))
+                return InternalServerError(new Exception("StripeCheckoutSuccessUrl or StripeCheckoutCancelUrl appSettings are missing."));
+
             StripeConfiguration.ApiKey = secretKey;
 
-            var paymentIntentService = new PaymentIntentService();
-            var createOptions = new PaymentIntentCreateOptions
+            try
             {
-                Amount = 999, // e.g., $9.99 in cents
-                Currency = "usd",
-                PaymentMethod = req.StripePaymentMethodId, // from frontend
-                Confirm = true
-            };
+                var options = new SessionCreateOptions
+                {
+                    Mode = "subscription",
+                    SuccessUrl = successUrl + "?session_id={CHECKOUT_SESSION_ID}",
+                    CancelUrl = cancelUrl,
+                    CustomerEmail = req.UserEmail,
+                    ClientReferenceId = req.UserId.ToString(),
+                    LineItems = new List<SessionLineItemOptions>
+                    {
+                        new SessionLineItemOptions
+                        {
+                            Price = req.PlanCode,
+                            Quantity = 1,
+                        }
+                    },
+                    Metadata = new Dictionary<string, string>
+                    {
+                        { "userId", req.UserId.ToString() },
+                        { "userAlias", req.UserAlias ?? string.Empty },
+                        { "planCode", req.PlanCode ?? string.Empty }
+                    }
+                };
 
-            PaymentIntent intent = await paymentIntentService.CreateAsync(createOptions);
+                var service = new SessionService();
+                var session = service.Create(options);
 
-            if (intent.Status == "succeeded")
-            {
-                // populate StripePaymentIntentId / StripeChargeId / StripeCustomerId
-                req.StripePaymentIntentId = intent.Id;
-                req.StripeChargeId = intent.LatestChargeId;
-                req.StripeCustomerId = intent.CustomerId;
-
-                // now persist subscription using existing Create logic
-                return await Create(req);
+                return Ok(new
+                {
+                    ok = true,
+                    id = session.Id,
+                    url = session.Url
+                });
             }
-
-            return Ok(new { ok = false, status = intent.Status, clientSecret = intent.ClientSecret });
+            catch (StripeException ex)
+            {
+                return Content(System.Net.HttpStatusCode.BadRequest, new
+                {
+                    ok = false,
+                    error = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(ex);
+            }
         }
     }
 
@@ -411,11 +382,15 @@ namespace EmpireOneRestAPIITJ.Controllers
         public string StripePaymentIntentId { get; set; } = "";
         public string StripeChargeId { get; set; } = "";            // ch_xxx
         public string StripeCustomerId { get; set; } = "";         // cus_xxx(optional)
+        public string StripePaymentMethodId { get; set; } = ""; // optional for Checkout
+    }
 
-        // New: ID generated by Stripe on the frontend
-        public string StripePaymentMethodId { get; set; } = "";
-
-        
+    public class CreateCheckoutSessionRequest
+    {
+        public int UserId { get; set; }
+        public string UserAlias { get; set; }
+        public string UserEmail { get; set; }
+        public string PlanCode { get; set; } // Stripe Price ID
     }
 
     public class SubscriptionWithPlan
