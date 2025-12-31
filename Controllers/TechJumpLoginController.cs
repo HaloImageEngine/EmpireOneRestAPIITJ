@@ -1,5 +1,6 @@
 ﻿using EmpireOneRestAPIITJ.DataManager;
 using EmpireOneRestAPIITJ.Security; // Encryption
+using EmpireOneRestAPIITJ.Services;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
@@ -99,10 +100,10 @@ namespace EmpireOneRestAPIITJ.DataManager.Controllers
                     cmd.Parameters.Add("@Zip", SqlDbType.NVarChar, 15).Value =
                         (object)body.Zip ?? DBNull.Value;
 
-                    if (body.BirthMonth.HasValue)
-                        cmd.Parameters.Add("@BirthMonth", SqlDbType.TinyInt).Value = body.BirthMonth.Value;
-                    else
-                        cmd.Parameters.Add("@BirthMonth", SqlDbType.TinyInt).Value = DBNull.Value;
+                    //if (body.BirthMonth.HasValue)
+                    //    cmd.Parameters.Add("@BirthMonth", SqlDbType.TinyInt).Value = body.BirthMonth.Value;
+                    //else
+                    //cmd.Parameters.Add("@BirthMonth", SqlDbType.TinyInt).Value = 0;
 
                     // Contact email for UsersInfo (can be same as login email)
                     cmd.Parameters.Add("@EmailAddress", SqlDbType.NVarChar, 255).Value =
@@ -131,6 +132,13 @@ namespace EmpireOneRestAPIITJ.DataManager.Controllers
                     var newUserInfoId = (pUserInfoId.Value == DBNull.Value)
                         ? (int?)null
                         : Convert.ToInt32(pUserInfoId.Value);
+
+                    // Send welcome email
+                    EmailSendService esvc = new EmailSendService();
+                    string returnemailmsg = esvc.SendEmail_SMTP_Register(
+                         body.Email.ToString(),
+                    newUserId.ToString(),
+                    body.UserAlias.ToString());
 
                     return Ok(new
                     {
@@ -239,6 +247,7 @@ namespace EmpireOneRestAPIITJ.DataManager.Controllers
             {
                 int userId;
                 string storedHash;
+                string userEmail;   // <- EmailAddress from UsersInfo
 
                 using (var conn = new SqlConnection(GetCs()))
                 {
@@ -246,7 +255,7 @@ namespace EmpireOneRestAPIITJ.DataManager.Controllers
 
                     // 1) Read user row by alias
                     using (var cmd = new SqlCommand(@"
-                        SELECT TOP (1) u.UserId, u.PasswordHash
+                        SELECT TOP (1) u.UserId, u.PasswordHash, ui.EmailAddress
                         FROM dbo.Users u
                         INNER JOIN dbo.UsersInfo ui ON ui.UserId = u.UserId
                         WHERE ui.UserAlias = @Alias;", conn))
@@ -266,6 +275,7 @@ namespace EmpireOneRestAPIITJ.DataManager.Controllers
 
                             userId = rdr.GetInt32(0);
                             storedHash = rdr.IsDBNull(1) ? null : rdr.GetString(1);
+                            userEmail = rdr.IsDBNull(2) ? null : rdr.GetString(2);
                         }
                     }
 
@@ -281,7 +291,8 @@ namespace EmpireOneRestAPIITJ.DataManager.Controllers
                     // 3) Update last login
                     await UpdateLastLoginUtcAsync(conn, userId, ct).ConfigureAwait(false);
 
-                    return Ok(new { ok = true, userId });
+                    // 4) Return userId + email
+                    return Ok(new { ok = true, userId, userEmail });
                 }
             }
             catch (Exception ex)
@@ -344,8 +355,8 @@ namespace EmpireOneRestAPIITJ.DataManager.Controllers
             [StringLength(15)]
             public string Zip { get; set; }
 
-            [Range(1, 12)]
-            public int? BirthMonth { get; set; }
+            //[Range(1, 12)]
+            //public int? BirthMonth { get; set; }
 
             [StringLength(25)]
             public string PhoneNum { get; set; }     // e.g. 123-456-7890

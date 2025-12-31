@@ -90,6 +90,102 @@ namespace EmpireOneRestAPIITJ.Models
         
     }
 
+    public class ModelProductPlansFull
+    {
+        // PK
+        [Key]
+        [Required]
+        public int ProductID { get; set; }
+
+        [Required]
+        [StringLength(50)]
+        public string PlanCode { get; set; }
+
+        [Required]
+        [StringLength(150)]
+        public string ProductName { get; set; }
+
+        [StringLength(255)]
+        public string ProductDescription { get; set; }
+
+        [Required]
+        [StringLength(100)]
+        public string StripeProductId { get; set; }
+
+        [Required]
+        [StringLength(100)]
+        public string StripePriceId { get; set; }
+
+        [StringLength(50)]
+        public string ProductTaxCode { get; set; }
+
+        [Required]
+        [Column(TypeName = "decimal(10, 2)")]
+        public decimal Price { get; set; }
+
+        [Required]
+        [StringLength(3)]
+        public string Currency { get; set; }
+
+        [Required]
+        [StringLength(10)]
+        public string BillingInterval { get; set; }
+
+        [Required]
+        public int IntervalCount { get; set; }
+
+        [Required]
+        public bool IsActive { get; set; }
+
+        [Required]
+        [Column(TypeName = "datetime2")]
+        public DateTime EffectiveStartDate { get; set; }
+
+        [Column(TypeName = "datetime2")]
+        public DateTime? EffectiveEndDate { get; set; }
+
+        [Required]
+        [Column(TypeName = "datetime2")]
+        public DateTime CreatedAt { get; set; }
+
+        [Required]
+        [Column(TypeName = "datetime2")]
+        public DateTime UpdatedAt { get; set; }
+
+        [Timestamp]
+        public byte[] RowVersion { get; set; }
+    }
+
+    public class ModelProductPlansGet
+    {
+        public int ProductID { get; set; }
+        
+        public string PlanCode { get; set; }
+
+        public string ProductName { get; set; }
+        
+        public string ProductDescription { get; set; }
+
+        public string StripeProductId { get; set; }
+
+        public string StripePriceId { get; set; }
+
+        public string ProductTaxCode { get; set; }
+
+
+        public decimal Price { get; set; }
+
+        public string Currency { get; set; }
+
+        public string BillingInterval { get; set; }
+
+        public bool IsActive { get; set; }
+
+
+    }
+
+
+
     public class ModelSubscriptionPlansShort
     {
         // PK

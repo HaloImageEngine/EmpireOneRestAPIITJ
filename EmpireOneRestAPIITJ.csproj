@@ -308,6 +308,8 @@
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Security\Encryption.cs" />
+    <Compile Include="Services\EmailSendService.cs" />
+    <Compile Include="Services\EmailTemplates.cs" />
     <Compile Include="Services\SubscriptionServices.cs" />
     <Compile Include="SubscriptionPlan.cs">
       <DependentUpon>Model_LottoJump_EF.tt</DependentUpon>

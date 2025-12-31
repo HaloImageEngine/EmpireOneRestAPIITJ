@@ -88,6 +88,65 @@ namespace EmpireOneRestAPIITJ.DataManager
             return results;
         }
 
+        public async Task<List<ModelProductPlansGet>> Get_ProductPlansYearlyAsync(string BillingInterval, CancellationToken ct)
+        {
+            var results = new List<ModelProductPlansGet>();
+
+            using (var conn = new SqlConnection(_cs))
+            using (var cmd = new SqlCommand("spGetProductYearly", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            })
+            {
+                cmd.Parameters.Add("@BillingInterval", SqlDbType.VarChar, 10)
+                    .Value = (object)BillingInterval ?? DBNull.Value;
+
+                await conn.OpenAsync(ct).ConfigureAwait(false);
+
+                using (var rdr = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false))
+                {
+                    // spGetProductYearly columns:
+                    // ProductId, PlanCode, ProductName, ProductDescription,
+                    // StripeProductId, StripePriceId, ProductTaxCode,
+                    // Price, Currency, BillingInterval, IsActive
+
+                    var oProductId = rdr.GetOrdinal("ProductId");
+                    var oPlanCode = rdr.GetOrdinal("PlanCode");
+                    var oProductName = rdr.GetOrdinal("ProductName");
+                    var oProductDesc = rdr.GetOrdinal("ProductDescription");
+                    var oStripeProductId = rdr.GetOrdinal("StripeProductId");
+                    var oStripePriceId = rdr.GetOrdinal("StripePriceId");
+                    var oProductTaxCode = rdr.GetOrdinal("ProductTaxCode");
+                    var oPrice = rdr.GetOrdinal("Price");
+                    var oCurrency = rdr.GetOrdinal("Currency");
+                    var oBillingInterval = rdr.GetOrdinal("BillingInterval");
+                    var oIsActive = rdr.GetOrdinal("IsActive");
+
+                    while (await rdr.ReadAsync(ct).ConfigureAwait(false))
+                    {
+                        var item = new ModelProductPlansGet
+                        {
+                            ProductID = rdr.GetInt32(oProductId),
+                            PlanCode = rdr.GetString(oPlanCode),
+                            ProductName = rdr.GetString(oProductName),
+                            ProductDescription = rdr.GetString(oProductDesc),
+                            StripeProductId = rdr.GetString(oStripeProductId),
+                            StripePriceId = rdr.GetString(oStripePriceId),
+                            ProductTaxCode = rdr.GetString(oProductTaxCode),
+                            Price = rdr.GetDecimal(oPrice),
+                            Currency = rdr.GetString(oCurrency),
+                            BillingInterval = rdr.GetString(oBillingInterval),
+                            IsActive = rdr.GetBoolean(oIsActive)
+                        };
+
+                        results.Add(item);
+                    }
+                }
+            }
+
+            return results;
+        }
+
         public async Task<List<ModelQuestions>> Get_AllQuestionsAsync(CancellationToken ct)
         {
             var results = new List<ModelQuestions>();

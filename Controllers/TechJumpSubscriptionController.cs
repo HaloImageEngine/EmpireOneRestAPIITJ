@@ -10,6 +10,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Cors;
@@ -31,6 +32,7 @@ namespace EmpireOneRestAPIITJ.Controllers
     [RoutePrefix("api/ITechJump")]
     public class ITechJumpSubscriptionController : ApiController
     {
+        private readonly DataAccess _data1 = new DataAccess();
         private readonly DataAccess02 _data = new DataAccess02();
         private readonly string _connString =
             ConfigurationManager.ConnectionStrings["ITechJumpDB"]?.ConnectionString;
@@ -116,6 +118,20 @@ namespace EmpireOneRestAPIITJ.Controllers
             {
                 return InternalServerError(ex);
             }
+        }
+
+        /// <summary>Get all questions by category.</summary>
+        /// <remarks>Route kept as-is for compatibility: Tech/GetGetQuestionsbyCat</remarks>
+        [HttpGet, Route("Stripe/GetProductYearly")]
+        public async Task<IHttpActionResult> Get_ProductYearly(
+            [FromUri][Required] string BillingInterval,
+            CancellationToken ct)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var data = await _data1.Get_ProductPlansYearlyAsync(BillingInterval, ct);
+            return Ok(data);
         }
 
         // GET /api/ITechjumpsubscription/{userid}
@@ -392,6 +408,9 @@ namespace EmpireOneRestAPIITJ.Controllers
         public string UserEmail { get; set; }
         public string PlanCode { get; set; } // Stripe Price ID
     }
+
+
+
 
     public class SubscriptionWithPlan
     {
